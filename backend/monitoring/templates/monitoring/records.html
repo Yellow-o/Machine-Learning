@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>疲劳记录 - 驾驶监测系统</title>
+  <style>
+    :root {
+      --bg: #eef3f9;
+      --bg-accent: #d8efe8;
+      --ink: #0f172a;
+      --muted: #5b6474;
+      --line: #dbe3ef;
+      --card: #ffffff;
+      --brand: #0f766e;
+      --brand-soft: #d9f3ef;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 5%, var(--bg-accent), transparent 34%),
+        radial-gradient(circle at 95% 0%, #ffe8d4, transparent 28%),
+        var(--bg);
+    }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,.78);
+    }
+    .brand { font-size: 24px; font-weight: 800; letter-spacing: .5px; }
+    .brand small { display:block; margin-top: 2px; font-size: 12px; color: var(--muted); font-weight: 600; }
+    .nav { display: flex; gap: 10px; }
+    .nav a {
+      text-decoration: none;
+      color: #0f172a;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-weight: 700;
+      transition: all .2s ease;
+    }
+    .nav a:hover { transform: translateY(-1px); border-color: #b7c9df; }
+    .nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+    .wrap { max-width: 1220px; margin: 24px auto 40px; padding: 0 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 26px rgba(15,23,42,.05);
+    }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+    .title-row h1 { margin: 0; font-size: 22px; }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .filters.user {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .filters input, .filters select {
+      width: 100%;
+      border: 1px solid #cfd8e6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+    .filters button {
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #0f172a;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .summary .item {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      font-size: 14px;
+    }
+    .summary .item b {
+      display: block;
+      font-size: 20px;
+      margin-top: 4px;
+    }
+    .tools {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .tools a {
+      text-decoration: none;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+      font-size: 13px;
+    }
+    .tools a.primary {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #edf2f7; text-align: left; padding: 10px 8px; font-size: 14px; }
+    th { color: #475569; font-weight: 800; }
+    tr:hover td { background: #fafcff; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+    .badge.pending {
+      background: #fff7dd;
+      color: #8a6700;
+    }
+    .badge.auto {
+      background: #e0edff;
+      color: #1d4ed8;
+    }
+    .badge.confirmed {
+      background: #ffe3df;
+      color: #b42318;
+    }
+    .badge.false {
+      background: #e8eef7;
+      color: #334155;
+    }
+
+    .path {
+      display: inline-block;
+      max-width: 220px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #3b516a;
+    }
+    .shot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .thumb {
+      width: 52px;
+      height: 34px;
+      border-radius: 6px;
+      border: 1px solid #d6deea;
+      object-fit: cover;
+      background: #eef2f7;
+    }
+    .detail-link {
+      color: #0f4c81;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    @media (max-width: 920px) {
+      .top { padding: 12px 14px; }
+      .brand { font-size: 20px; }
+      .title-row { flex-direction: column; align-items: flex-start; }
+      .nav a { padding: 9px 10px; font-size: 13px; }
+      .path { max-width: 130px; }
+      .filters { grid-template-columns: 1fr; }
+      .filters.user { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr; }
+      .tools { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">驾驶监测系统<small>Fatigue Monitoring Console</small></div>
+    <nav class="nav">
+      <a href="/records/" class="active">疲劳记录</a>
+      {% if is_admin %}<a href="/dashboard/">统计看板</a>{% endif %}
+      {% if is_admin %}<a href="/admin/">管理后台</a>{% endif %}
+      <a href="/logout/">退出</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    <section class="card">
+      <div class="title-row">
+        <h1>{% if is_admin %}平台疲劳事件记录{% else %}我的疲劳事件记录{% endif %}</h1>
+        <span class="badge">仅展示疲劳驾驶</span>
+      </div>
+
+      <form method="get" class="filters {% if is_admin %}admin{% else %}user{% endif %}">
+        {% if is_admin %}
+        <input type="text" name="owner" value="{{ owner_filter }}" placeholder="账号或姓名">
+        {% endif %}
+        <input type="date" name="start_date" value="{{ start_date }}">
+        <input type="date" name="end_date" value="{{ end_date }}">
+        <select name="review_status">
+          <option value="">全部复核状态</option>
+          {% for value, label in review_choices %}
+          <option value="{{ value }}" {% if review_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% if is_admin %}
+        <input type="number" name="min_conf" value="{{ min_conf }}" min="0" max="1" step="0.01" placeholder="最小置信度">
+        {% endif %}
+        <button type="submit">筛选</button>
+      </form>
+
+      <div class="summary">
+        <div class="item">事件总数<b>{{ total_events }}</b></div>
+        <div class="item">累计时长(秒)<b>{{ total_duration }}</b></div>
+        <div class="item">累计驾驶时长(秒)<b>{{ drive_duration }}</b></div>
+      </div>
+      <div style="margin: -6px 0 12px; color: #334155; font-size: 13px;">
+        疲劳占比：<b>{{ fatigue_ratio }}%</b>
+        {% if is_admin %}（平台范围）{% else %}（仅本人）{% endif %}
+      </div>
+      <div class="summary">
+        {% if show_pending %}
+        <div class="item">待复核<b>{{ pending_count }}</b></div>
+        {% else %}
+        <div class="item">系统判定<b>{{ auto_count }}</b></div>
+        {% endif %}
+        <div class="item">确认疲劳<b>{{ confirmed_count }}</b></div>
+        <div class="item">误报<b>{{ false_positive_count }}</b></div>
+      </div>
+
+      <div class="tools">
+        <a class="primary" href="/records/export/{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}">导出 CSV</a>
+        <a href="/records/">重置筛选</a>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>开始时间</th>
+            <th>结束时间</th>
+            {% if is_admin %}<th>账号姓名</th>{% endif %}
+            <th>类型</th>
+            {% if is_admin %}<th>标签</th>{% endif %}
+            <th>时长(秒)</th>
+            {% if is_admin %}<th>峰值置信度</th>{% endif %}
+            <th>复核状态</th>
+            <th>截图路径</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in events %}
+          <tr>
+            <td>{{ e.start_time }}</td>
+            <td>{{ e.end_time }}</td>
+            {% if is_admin %}<td>{{ e.display_driver_name }}</td>{% endif %}
+            <td><span class="badge">{{ e.get_event_type_display }}</span></td>
+            {% if is_admin %}<td>{{ e.source_label }}</td>{% endif %}
+            <td>{{ e.duration_sec|floatformat:2 }}</td>
+            {% if is_admin %}<td>{{ e.peak_risk_conf|floatformat:3 }}</td>{% endif %}
+            <td>
+              <span class="badge {% if e.review_status == 'auto' %}auto{% elif e.review_status == 'pending' %}pending{% elif e.review_status == 'confirmed' %}confirmed{% else %}false{% endif %}">
+                {{ e.get_review_status_display }}
+              </span>
+            </td>
+            <td>
+              {% if e.snapshot_path %}
+              <div class="shot">
+                {% if e.snapshot_path|slice:":7" == "/media/" %}
+                <a href="{{ e.snapshot_path }}" target="_blank" rel="noopener">
+                  <img class="thumb" src="{{ e.snapshot_path }}" alt="截图">
+                </a>
+                {% endif %}
+                <span class="path" title="{{ e.snapshot_path }}">{{ e.snapshot_path }}</span>
+              </div>
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td><a class="detail-link" href="/records/{{ e.id }}/">详情</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="{% if is_admin %}10{% else %}7{% endif %}">暂无记录</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

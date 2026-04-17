@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>注册 - 驾驶监测系统</title>
+  <style>
+    :root {
+      --bg: #eef3f9;
+      --bg-accent: #d8efe8;
+      --ink: #0f172a;
+      --muted: #5b6474;
+      --line: #dbe3ef;
+      --card: #ffffff;
+      --brand: #0f766e;
+      --brand-dark: #0b5f59;
+      --danger-soft: #ffe6e2;
+      --danger: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 5%, var(--bg-accent), transparent 34%),
+        radial-gradient(circle at 95% 0%, #ffe8d4, transparent 28%),
+        var(--bg);
+      padding: 20px;
+    }
+    .card {
+      width: min(94vw, 500px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(15,23,42,.08);
+    }
+    .logo {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--brand);
+      background: #d9f3ef;
+      padding: 5px 10px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+    h1 { margin: 0; font-size: 28px; }
+    p { margin: 8px 0 18px; color: var(--muted); }
+    label { display: block; margin: 12px 0 6px; font-weight: 700; }
+    input, select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid #cfd8e6;
+      font-size: 15px;
+      background: #fff;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #8cb3da;
+      box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+    }
+    button {
+      width: 100%;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), #14b8a6);
+      cursor: pointer;
+    }
+    button:hover { background: linear-gradient(135deg, var(--brand-dark), #0d9488); }
+    .err {
+      margin-top: 12px;
+      color: var(--danger);
+      background: var(--danger-soft);
+      border: 1px solid #fecaca;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .err ul { margin: 8px 0 0 18px; }
+    .foot {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .foot a { color: #0f4c81; text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <form class="card" method="post">
+    {% csrf_token %}
+    <div class="logo">Fatigue Monitoring Console</div>
+    <h1>创建账号</h1>
+    <p>请填写信息，注册成功后系统自动生成 6 位 UID 账号；管理员注册需邀请码。</p>
+
+    <label for="id_full_name">姓名</label>
+    <input id="id_full_name" name="full_name" type="text" value="{{ form.full_name.value|default:'' }}" required autofocus>
+
+    <label for="id_role">注册角色</label>
+    <select id="id_role" name="role" required>
+      {% for val, label in form.role.field.choices %}
+        <option value="{{ val }}" {% if form.role.value|default:'driver' == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="id_gender">性别</label>
+    <select id="id_gender" name="gender" required>
+      {% for val, label in form.gender.field.choices %}
+        <option value="{{ val }}" {% if form.gender.value|default:'unknown' == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="id_phone">手机号</label>
+    <input id="id_phone" name="phone" type="text" value="{{ form.phone.value|default:'' }}" required>
+
+    <div id="invite-wrap">
+      <label for="id_invite_code">管理员邀请码</label>
+      <input id="id_invite_code" name="invite_code" type="text" value="{{ form.invite_code.value|default:'' }}" placeholder="管理员注册必填">
+    </div>
+
+    <label for="id_id_card">身份证号</label>
+    <input id="id_id_card" name="id_card" type="text" value="{{ form.id_card.value|default:'' }}" required>
+
+    <label for="id_password1">密码</label>
+    <input id="id_password1" name="password1" type="password" required>
+
+    <label for="id_password2">确认密码</label>
+    <input id="id_password2" name="password2" type="password" required>
+
+    <button type="submit">注册并进入系统</button>
+
+    {% if form.errors %}
+      <div class="err">注册失败，请检查输入信息。{{ form.errors.as_ul }}</div>
+    {% endif %}
+
+    <div class="foot">已有账号？<a href="/login/">去登录</a></div>
+  </form>
+  <script>
+    (function () {
+      const roleSelect = document.getElementById("id_role");
+      const inviteWrap = document.getElementById("invite-wrap");
+      const inviteInput = document.getElementById("id_invite_code");
+      function syncInviteVisibility() {
+        const admin = roleSelect && roleSelect.value === "admin";
+        inviteWrap.style.display = admin ? "block" : "none";
+        inviteInput.required = admin;
+      }
+      if (roleSelect) {
+        roleSelect.addEventListener("change", syncInviteVisibility);
+      }
+      syncInviteVisibility();
+    })();
+  </script>
+</body>
+</html>

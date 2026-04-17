@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>事件详情 - 驾驶监测系统</title>
+  <style>
+    :root {
+      --bg: #eef3f9;
+      --line: #dbe3ef;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --brand: #0f172a;
+      --accent: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(10px);
+    }
+    .top a {
+      text-decoration: none;
+      color: #0f4c81;
+      font-weight: 700;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 24px auto 40px;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(15,23,42,.05);
+    }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .item {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      font-size: 14px;
+    }
+    .item b {
+      display: block;
+      margin-top: 6px;
+      font-size: 18px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: #d9f3ef;
+      color: #0f766e;
+    }
+    .badge.pending {
+      background: #fff7dd;
+      color: #8a6700;
+    }
+    .badge.auto {
+      background: #e0edff;
+      color: #1d4ed8;
+    }
+    .badge.confirmed {
+      background: #ffe3df;
+      color: #b42318;
+    }
+    .badge.false {
+      background: #e8eef7;
+      color: #334155;
+    }
+    .ok {
+      margin-top: 10px;
+      color: #0f766e;
+      background: #dff7f2;
+      border: 1px solid #a7f3d0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .review-form {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .review-form select, .review-form input {
+      width: 100%;
+      border: 1px solid #cfd8e6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+    .review-form button {
+      grid-column: 1 / -1;
+      border-radius: 10px;
+      border: 0;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: #0f172a;
+      cursor: pointer;
+      width: fit-content;
+    }
+    .review-form textarea {
+      width: 100%;
+      min-height: 80px;
+      border: 1px solid #cfd8e6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 14px;
+      background: #fff;
+      resize: vertical;
+    }
+    .img-wrap {
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      background: #f8fafc;
+    }
+    .img-wrap img {
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid #dbe3ef;
+    }
+    .path {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .actions a {
+      text-decoration: none;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brand);
+      background: #fff;
+    }
+    .actions a.primary {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div><b>事件详情</b> <span class="muted">ID: {{ event.id }}</span></div>
+    <a href="/records/">返回记录列表</a>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h1>疲劳事件</h1>
+      <div class="muted">账号：{{ event.display_driver_name }}</div>
+      <div style="margin-top:8px;">
+        <span class="badge {% if event.review_status == 'auto' %}auto{% elif event.review_status == 'pending' %}pending{% elif event.review_status == 'confirmed' %}confirmed{% else %}false{% endif %}">
+          {{ event.get_review_status_display }}
+        </span>
+      </div>
+      {% if saved %}
+      <div class="ok">状态已更新。</div>
+      {% endif %}
+      <div class="actions">
+        <a class="primary" href="/records/">返回列表</a>
+        {% if can_preview %}
+        <a href="{{ event.snapshot_path }}" target="_blank" rel="noopener">打开原图</a>
+        {% endif %}
+      </div>
+    </section>
+
+    {% if is_admin %}
+    <section class="card">
+      <h2 style="margin:0 0 10px;font-size:18px;">事件处理</h2>
+      {% if can_admin_review %}
+      <form method="post" class="review-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="review">
+        <label for="review_status">复核状态</label>
+        <select id="review_status" name="review_status" required>
+          {% for value, label in review_choices %}
+          <option value="{{ value }}" {% if event.review_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label for="review_note">复核备注</label>
+        <input id="review_note" name="review_note" value="{{ event.review_note }}" maxlength="255" placeholder="可填写原因，例如：遮挡导致误报">
+        <button type="submit">保存复核结果</button>
+      </form>
+      {% else %}
+      <div class="muted">当前事件未被申诉，不需要复核。</div>
+      {% endif %}
+      <div class="muted" style="margin-top:8px;">
+        最近复核：{% if event.reviewed_by_id %}{{ event.reviewed_by.username }} / {{ event.reviewed_at }}{% else %}暂无{% endif %}
+      </div>
+    </section>
+    {% else %}
+    <section class="card">
+      <h2 style="margin:0 0 10px;font-size:18px;">申诉处理</h2>
+      {% if can_appeal %}
+      <form method="post" class="review-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="appeal">
+        <label for="appeal_note">申诉原因</label>
+        <textarea id="appeal_note" name="appeal_note" maxlength="255" placeholder="例如：当时并未疲劳，存在遮挡或误判" required></textarea>
+        <button type="submit">提交申诉</button>
+      </form>
+      {% elif event.review_status == 'pending' %}
+      <div class="muted">你已提交申诉，等待管理员复核。</div>
+      {% else %}
+      <div class="muted">当前事件已处理完成，无需再次申诉。</div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="grid">
+        <div class="item">事件类型<b><span class="badge">{{ event.get_event_type_display }}</span></b></div>
+        <div class="item">开始时间<b>{{ event.start_time }}</b></div>
+        <div class="item">结束时间<b>{{ event.end_time }}</b></div>
+        <div class="item">持续时长(秒)<b>{{ event.duration_sec|floatformat:2 }}</b></div>
+        {% if is_admin %}
+        <div class="item">模型标签<b>{{ event.source_label|default:"-" }}</b></div>
+        <div class="item">峰值置信度<b>{{ event.peak_risk_conf|floatformat:3 }}</b></div>
+        <div class="item">触发帧阈值<b>{{ event.trigger_frames }}</b></div>
+        <div class="item">恢复帧阈值<b>{{ event.recover_frames }}</b></div>
+        <div class="item">截图SHA256<b>{{ event.snapshot_sha256|default:"-" }}</b></div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin:0 0 10px;font-size:18px;">截图预览</h2>
+      {% if can_preview %}
+      <div class="img-wrap">
+        <img src="{{ event.snapshot_path }}" alt="事件截图">
+        <div class="path">{{ event.snapshot_path }}</div>
+      </div>
+      {% elif event.snapshot_path %}
+      <div class="img-wrap">
+        当前截图不是 media 路径，无法直接网页预览。
+        <div class="path">{{ event.snapshot_path }}</div>
+      </div>
+      {% else %}
+      <div class="img-wrap">当前事件没有截图。</div>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,38 @@
+services:
+  mysql8:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: driver_monitoring
+      MYSQL_USER: dms_user
+      MYSQL_PASSWORD: dms_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend-learnir:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql8:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./logs:/data/logs
+      - ./drivers:/data/drivers
+
+volumes:
+  mysql_data:

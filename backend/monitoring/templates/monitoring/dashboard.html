@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>统计看板 - 驾驶监测系统</title>
+  <style>
+    :root {
+      --bg: #eef3f9;
+      --bg-accent: #d8efe8;
+      --ink: #0f172a;
+      --muted: #5b6474;
+      --line: #dbe3ef;
+      --card: #ffffff;
+      --brand: #0f766e;
+      --brand-soft: #d9f3ef;
+      --warn-soft: #fff1d6;
+      --danger-soft: #ffe3df;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 5%, var(--bg-accent), transparent 34%),
+        radial-gradient(circle at 95% 0%, #ffe8d4, transparent 28%),
+        var(--bg);
+    }
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,.78);
+    }
+    .brand { font-size: 24px; font-weight: 800; letter-spacing: .5px; }
+    .brand small { display:block; margin-top: 2px; font-size: 12px; color: var(--muted); font-weight: 600; }
+    .nav { display: flex; gap: 10px; }
+    .nav a {
+      text-decoration: none;
+      color: #0f172a;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-weight: 700;
+      transition: all .2s ease;
+    }
+    .nav a:hover { transform: translateY(-1px); border-color: #b7c9df; }
+    .nav a.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+    .wrap { max-width: 1220px; margin: 24px auto 40px; padding: 0 16px; }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .title-row h1 { margin: 0; font-size: 22px; }
+    .title-row .date {
+      color: #0f4c81;
+      background: #e7f0fb;
+      border: 1px solid #cfe0f7;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 26px rgba(15,23,42,.05);
+    }
+    .kpi h2 { margin: 0; font-size: 14px; color: var(--muted); }
+    .kpi .val { margin-top: 10px; font-size: 40px; font-weight: 800; line-height: 1; }
+    .kpi .tip { margin-top: 8px; font-size: 12px; color: var(--muted); }
+    .kpi.count { background: linear-gradient(140deg, #ffffff, #f2fbf7); }
+    .kpi.duration { background: linear-gradient(140deg, #ffffff, #f6f8ff); }
+    .kpi.peak { background: linear-gradient(140deg, #ffffff, #fff2f2); }
+    .api { background: linear-gradient(140deg, #ffffff, #fff7ea); }
+    .api a { display: inline-block; margin-right: 8px; margin-top: 8px; color: #0f4c81; font-weight: 700; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+
+    .panel-title { margin: 0 0 12px; font-size: 18px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #edf2f7; text-align: left; padding: 10px 8px; font-size: 14px; }
+    th { color: #475569; font-weight: 800; }
+    tr:hover td { background: #fafcff; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+    .small { color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 920px) {
+      .stats { grid-template-columns: 1fr; }
+      .split { grid-template-columns: 1fr; }
+      .top { padding: 12px 14px; }
+      .brand { font-size: 20px; }
+      .title-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .nav a { padding: 9px 10px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">驾驶监测系统<small>Fatigue Monitoring Console</small></div>
+    <nav class="nav">
+      <a href="/records/">疲劳记录</a>
+      <a href="/dashboard/" class="active">统计看板</a>
+      {% if is_admin %}<a href="/admin/">管理后台</a>{% endif %}
+      <a href="/logout/">退出</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="title-row">
+      <h1>今日概览</h1>
+      <div class="date">日期：{{ today }}</div>
+    </div>
+
+    <section class="stats">
+      <article class="card kpi duration">
+        <h2>今日驾驶总时长（秒）</h2>
+        <div class="val">{{ today_drive_seconds }}</div>
+        <div class="tip">用于计算真实风险占比，不再只看疲劳事件。</div>
+      </article>
+      <article class="card kpi peak">
+        <h2>今日疲劳总时长（秒）</h2>
+        <div class="val">{{ today_duration }}</div>
+        <div class="tip">今日最高风险 {{ today_peak }}，可回看截图复核。</div>
+      </article>
+      <article class="card kpi count">
+        <h2>今日疲劳占比</h2>
+        <div class="val">{{ today_fatigue_ratio }}%</div>
+        <div class="tip">疲劳总时长 / 驾驶总时长。</div>
+      </article>
+      <article class="card api">
+        <h2>今日疲劳次数</h2>
+        <div class="val">{{ today_count }}</div>
+        <div class="tip">次数越高，建议检查作息与值班时段。</div>
+      </article>
+    </section>
+
+    {% if is_admin %}
+    <section class="card" style="margin-bottom:18px;">
+      <h2 class="panel-title">平台摘要</h2>
+      <div class="small">账号总数 {{ account_count }}（驾驶员 {{ driver_count }} / 管理员 {{ admin_count }}）</div>
+      {% if pending_review_count > 0 %}
+      <div class="small">待复核 {{ pending_review_count }} | 已确认 {{ confirmed_count }} | 误报 {{ false_positive_count }}</div>
+      {% else %}
+      <div class="small">系统判定 {{ auto_count }} | 已确认 {{ confirmed_count }} | 误报 {{ false_positive_count }}</div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="split">
+      <article class="card">
+        <h2 class="panel-title">近 7 天趋势</h2>
+        <table>
+          <thead>
+            <tr><th>日期</th><th>疲劳次数</th><th>总时长（秒）</th></tr>
+          </thead>
+          <tbody>
+            {% for t in trend %}
+            <tr>
+              <td>{{ t.day }}</td>
+              <td>{{ t.count }}</td>
+              <td>{{ t.duration }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3">暂无趋势数据</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </article>
+
+      <article class="card">
+        <h2 class="panel-title">高风险账号 Top 5</h2>
+        <table>
+          <thead>
+            <tr><th>账号</th><th>次数</th><th>总时长（秒）</th><th>最高置信度</th></tr>
+          </thead>
+          <tbody>
+            {% for a in top_accounts %}
+            <tr>
+              <td>{% if a.owner__profile__full_name %}{{ a.owner__profile__full_name }}{% else %}{{ a.owner__username }}{% endif %}</td>
+              <td>{{ a.event_count }}</td>
+              <td>{{ a.total_duration|floatformat:2 }}</td>
+              <td>{{ a.max_conf|floatformat:3 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">暂无账号统计</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2 class="panel-title">最近 10 条疲劳事件</h2>
+      <table>
+        <thead>
+          <tr><th>开始时间</th><th>账号姓名</th><th>类型</th><th>时长（秒）</th><th>峰值置信度</th></tr>
+        </thead>
+        <tbody>
+          {% for e in recent_events %}
+          <tr>
+            <td>{{ e.start_time }}</td>
+            <td>{{ e.display_driver_name }}</td>
+            <td>{{ e.get_event_type_display }}</td>
+            <td>{{ e.duration_sec|floatformat:2 }}</td>
+            <td>{{ e.peak_risk_conf|floatformat:3 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">暂无数据</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
